@@ -86,43 +86,43 @@ def main():
 
 def graphics(power, power_losses, reactive_power_losses, Qc_values, V2_values, theta_2_values):
     time = np.arange(0, 24)
-    fig, axs = plt.subplots(ncols = 6, figsize = (15,4))
+    fig, axs = plt.subplots(nrows = 2, ncols = 3, figsize = (15,4))
 
     #P vs t
-    axs[0].plot(time, power, 'tab:blue')
-    axs[0].set_title('Potencia activa\nen 24 horas\n$S_{base}: 100MVA$')
-    axs[0].set_xlabel('Tiempo (h)')
-    axs[0].set_ylabel('Potencia (MW)')
+    axs[0, 0].plot(time, power, 'tab:blue')
+    axs[0, 0].set_title('Potencia activa\nen 24 horas\n$S_{base}: 100MVA$')
+    axs[0, 0].set_xlabel('Tiempo (h)')
+    axs[0, 0].set_ylabel('Potencia (P.U.)')
 
     # Plosses vs t
-    axs[1].plot(time, power_losses, 'tab:orange')
-    axs[1].set_title('Pérdidas de potencia\nen 24 horas\n$S_{base}: 100MVA$')
-    axs[1].set_xlabel('Tiempo (h)')
-    axs[1].set_ylabel('Pérdidas de potencia (MV)')
+    axs[0, 1].plot(time, power_losses, 'tab:orange')
+    axs[0, 1].set_title('Pérdidas de potencia\nen 24 horas\n$S_{base}: 100MVA$')
+    axs[0, 1].set_xlabel('Tiempo (h)')
+    axs[0, 1].set_ylabel('Pérdidas de potencia (P.U.)')
 
     # Q vs t
-    axs[2].plot(time, reactive_power_losses, 'tab:green')
-    axs[2].set_title('Potencia reactiva\nen 24 horas\n$S_{base}: 100MVA$')
-    axs[2].set_xlabel('Tiempo (h)')
-    axs[2].set_ylabel('Potencia reactiva (MVAr)')
+    axs[0, 2].plot(time, reactive_power_losses, 'tab:green')
+    axs[0, 2].set_title('Potencia reactiva\nen 24 horas\n$S_{base}: 100MVA$')
+    axs[0, 2].set_xlabel('Tiempo (h)')
+    axs[0, 2].set_ylabel('Potencia reactiva (P.U.)')
 
     # Qc vs t
-    axs[3].plot(time, Qc_values, 'tab:red')
-    axs[3].set_title('Qc en 24 horas\n$S_{base}: 100MVA$')
-    axs[3].set_xlabel('Tiempo (h)')
-    axs[3].set_ylabel('Potencia reactiva (MVAr)')
+    axs[1, 0].plot(time, Qc_values, 'tab:red')
+    axs[1, 0].set_title('Qc en 24 horas\n$S_{base}: 100MVA$')
+    axs[1, 0].set_xlabel('Tiempo (h)')
+    axs[1, 0].set_ylabel('Potencia reactiva (P.U.)')
 
     #V2 vs t
-    axs[4].plot(time, V2_values, 'tab:blue')
-    axs[4].set_title('V2 en 24 horas\n$V_{base}: 115 kV$')
-    axs[4].set_xlabel('Tiempo (h)')
-    axs[4].set_ylabel('Voltaje (P.U.)')
+    axs[1, 1].plot(time, V2_values, 'tab:blue')
+    axs[1, 1].set_title('V2 en 24 horas\n$V_{base}: 115 kV$')
+    axs[1, 1].set_xlabel('Tiempo (h)')
+    axs[1, 1].set_ylabel('Voltaje (P.U.)')
 
     #theta_2 vs t
-    axs[5].plot(time, theta_2_values, 'tab:green')
-    axs[5].set_title('$\Theta_2$ en 24 horas')
-    axs[5].set_xlabel('Tiempo (h)')
-    axs[5].set_ylabel('$\Theta_2$ (deg)')
+    axs[1, 2].plot(time, theta_2_values, 'tab:green')
+    axs[1, 2].set_title('$\Theta_2$ en 24 horas')
+    axs[1, 2].set_xlabel('Tiempo (h)')
+    axs[1, 2].set_ylabel('$\Theta_2$ (deg)')
 
 
     plt.tight_layout()
