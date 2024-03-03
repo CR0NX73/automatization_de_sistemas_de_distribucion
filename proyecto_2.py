@@ -334,9 +334,9 @@ class Financial_Analysis:
         Constants regarding the profitability of the reactive power compensation installation project
         """
         self.cost_per_MVAr = 95000 #USD
-        self.anual_discount_rate = 0.15 
+        self.anual_discount_rate = 0.1 
         self.energy_cost = 800 #COP/KWh
-        self.TRM = 5000
+        self.TRM = 4000
         self.lifespan = 20 #years
         self.loss_factor = 29/60
         self.hours_per_year = 8760 #h/year
