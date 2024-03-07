@@ -1,7 +1,7 @@
 """
 Automatización de sistemas de distribución
 Proyecto 2
-Autor: Juan Sebastián Caicedo
+Autores: Juan Sebastián Caicedo - Daniel García
 """
 from pyfiglet import Figlet
 from tabulate import tabulate
@@ -17,20 +17,24 @@ def main():
     output_title = figlet.setFont(font = 'big')
     output_title = figlet.renderText('Optimal Power Flow in Distribution Systems')
     print(f'{output_title}\n')
-    print("Author: Juan Sebastián Caicedo")
+    print("Authors: Juan Sebastián Caicedo & Daniel García")
     kwargs = get_initial_data()
     S = [0.3, 0.6, 1]
+    loss_factor = 8*((S[0]*100)**2+(S[1]*100)**2+(S[2]*100)**2)/(24*100**2)
     while True:
         try:
             power, power_losses, reactive_power_losses, Qc_values, V2_values, theta_2_values = [], [], [], [], [], []
+            power_losses_nC = []
             option = display_main_menu()
             match option:
                 case "1" | "1.":
                     for s in S:
                         system = ElectricalSystem(100, 0, 0, s, *kwargs)
                         losses, V2, Qc, theta_2 = system.solve("power loss")
+                        lossesnC, V2nC, QcnC, theta_2_nC = system.solve("power loss", include_Qc=False)
                         table = system.data("power loss")
                         print(f'\n{table}\n')
+                        power_losses_nC +=[lossesnC]*8
                         power += [system.PD]*8
                         power_losses += [losses]*8
                         reactive_power_losses += [system.QD]*8
@@ -38,13 +42,17 @@ def main():
                         V2_values += [V2]*8
                         theta_2_values += [theta_2]*8
                     graphics(power, power_losses, reactive_power_losses, Qc_values, V2_values, theta_2_values)
-                    
+                    financial_data = Financial_Analysis(Qc_values, power_losses, power_losses_nC, loss_factor)
+                    print(financial_data.financial_table())
+
                 case "2" | "2.":
                     for s in S:
                         system = ElectricalSystem(0, 100, 0, s, *kwargs)
                         losses, V2, Qc, theta_2 = system.solve("power loss")
+                        lossesnC, V2nC, QcnC, theta_2_nC = system.solve("power loss", include_Qc=False)
                         table = system.data("power loss")
                         print(f'\n{table}\n')
+                        power_losses_nC +=[lossesnC]*8
                         power += [system.PD]*8
                         power_losses += [losses]*8
                         reactive_power_losses += [system.QD]*8
@@ -52,7 +60,9 @@ def main():
                         V2_values += [V2]*8
                         theta_2_values += [theta_2]*8
                     graphics(power, power_losses, reactive_power_losses, Qc_values, V2_values, theta_2_values)
-                    
+                    financial_data = Financial_Analysis(Qc_values, power_losses, power_losses_nC, loss_factor)
+                    print(financial_data.financial_table())
+
                 case "3" | "3.":
                     for s in S:
                         system = ElectricalSystem(100, 0, 0, s, *kwargs)
@@ -66,7 +76,7 @@ def main():
                         V2_values += [V2]*8
                         theta_2_values += [theta_2]*8
                     graphics(power, power_losses, reactive_power_losses, Qc_values, V2_values, theta_2_values)
-                    
+
                 case "4" | "4.":
                     for s in S:
                         system = ElectricalSystem(0, 100, 0, s, *kwargs)
@@ -86,8 +96,10 @@ def main():
                     for s in S:
                         system = ElectricalSystem(S_percentage, Z_percentage, I_percentage,  s, *kwargs)
                         losses, V2, Qc, theta_2 = system.solve("power loss")
+                        lossesnC, V2nC, QcnC, theta_2_nC = system.solve("power loss", include_Qc=False)
                         table = system.data("power loss")
                         print(f'\n{table}\n')
+                        power_losses_nC +=[lossesnC]*8
                         power += [system.PD]*8
                         power_losses += [losses]*8
                         reactive_power_losses += [system.QD]*8
@@ -95,7 +107,9 @@ def main():
                         V2_values += [V2]*8
                         theta_2_values += [theta_2]*8
                     graphics(power, power_losses, reactive_power_losses, Qc_values, V2_values, theta_2_values)
-                    
+                    financial_data = Financial_Analysis(Qc_values, power_losses, power_losses_nC, loss_factor)
+                    print(financial_data.financial_table())
+
                 case "6" | "6.":
                     sys.exit()
                 case _:
@@ -302,16 +316,12 @@ class ElectricalSystem:
             return solution.fun, solution.x[0], 0, np.rad2deg(solution.x[1])
 
     def data(self, objective):
+        s = [30, 60, 100]
         load_type = f"{round(self.S_percentage)}% const. power\n" + \
             f"{round(self.Z_percentage)}% const. impedance\n" + \
             f"{round(self.I_percentage)}% const. current"
         Ploss, V2, Qc, theta_2 = self.solve(objective)
         PlossnC, V2nC, QcnC, theta_2_nC = self.solve(objective, include_Qc = False)
-        financial_data = Financial_Analysis(Qc, Ploss, PlossnC)
-        VPN = financial_data.VPN()
-        TIR = financial_data.TIR()
-        payback_time = financial_data.Payback_Time()
-        CB = financial_data.CB()
         data_table = np.array([
             ["Load Type", load_type], 
             ["V2 (P.U.)", V2], 
@@ -319,38 +329,28 @@ class ElectricalSystem:
             ["Qc (P.U.)", Qc], 
             ["Pérdidas (P.U.)", Ploss],
             ["Pérdidas sin\ncompensación", PlossnC],
-            ["VPN (COP)", "${:,.2f}".format(VPN)],
-            ["TIR (%)", TIR],
-            ["Payback Time (years)", payback_time],
-            ["Beneficio/Costo", CB],
             ["S (MVA)", self.S*self.Sbase]
         ])
-        return tabulate(data_table[1:], headers=data_table[0], tablefmt="grid")
+        return tabulate(data_table[1:], headers=data_table[0], tablefmt="grid") 
 
 class Financial_Analysis:
 
-    def __init__(self, Qc, Compensation, No_Compensation):
+    def __init__(self, Qc, Compensation, No_Compensation, loss_factor):
         """
         Constants regarding the profitability of the reactive power compensation installation project
         """
         self.cost_per_MVAr = 95000 #USD
         self.anual_discount_rate = 0.1 
-        self.energy_cost = 800 #COP/KWh
-        self.TRM = 4000
+        self.energy_cost = 200 #USD/MWh
         self.lifespan = 20 #years
-        self.loss_factor = 29/60
-        self.hours_per_year = 8760 #h/year
+        self.loss_factor = loss_factor
         self.Sbase = 100
-        self.Qc = Qc*self.Sbase
-        self.Compensation = Compensation*self.Sbase
-        self.No_Compensation = No_Compensation*self.Sbase
-        self.Investment = self.Qc*self.cost_per_MVAr*self.TRM
+        self.Qc = Qc[-1]*self.Sbase
+        self.Compensation = sum(Compensation)*self.Sbase
+        self.No_Compensation = sum(No_Compensation)*self.Sbase
+        self.Investment = self.Qc*self.cost_per_MVAr
         """Cálculos para los indicadores"""
-        Energy_losses_no_compensation = self.No_Compensation*1000*self.loss_factor*self.hours_per_year
-        Energy_losses_compensation = self.Compensation*1000*self.loss_factor*self.hours_per_year
-        Energy_losses_payments_no_compensation = Energy_losses_no_compensation*self.energy_cost
-        Energy_losses_payments_compensation = Energy_losses_compensation*self.energy_cost
-        self.Savings = Energy_losses_payments_no_compensation - Energy_losses_payments_compensation
+        self.Savings = (self.No_Compensation-self.Compensation)*self.energy_cost*365
     
     def VPN(self):
         Valor_Presente_Neto = -self.Investment
@@ -380,6 +380,22 @@ class Financial_Analysis:
     def CB(self):
         benefits = sum([self.Savings/(1+self.anual_discount_rate)**t for t in range(1, self.lifespan + 1)])
         return benefits/self.Investment
+    
+    def financial_table(self):
+        VPN = self.VPN()
+        TIR = self.TIR()
+        payback_time = self.Payback_Time()
+        CB = self.CB()
+        table = np.array([
+            ["Indicador económico", "Valor"],
+            ["Inversión (USD)", "${:,.2f}".format(self.Investment) ],
+            ["Ahorros (USD)", "${:,.2f}".format(self.Savings)],
+            ["VPN (USD)", "${:,.2f}".format(VPN)],
+            ["TIR (%)", "${:,.2f}".format(TIR)],
+            ["Payback Time (years)", "${:,.2f}".format(payback_time)],
+            ["Beneficio/Costo", "${:,.2f}".format(CB)]
+            ])
+        return tabulate(table[1:], headers=table[0], tablefmt="grid")
 
 if __name__ == '__main__':
     main()
